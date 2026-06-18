@@ -81,5 +81,4 @@ LEFT JOIN public3.userstable u
     ON r.user_id = u.user_id
 
 WHERE b.categories ILIKE '%Restaurants%'
-
-LIMIT 10000;
+;
