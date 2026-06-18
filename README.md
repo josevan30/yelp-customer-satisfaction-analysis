@@ -18,8 +18,3 @@ This project investigates factors associated with restaurant customer satisfacti
 3. Analyze data in R
 4. Build predictive models
 5. Generate managerial insights
-
-## Key Results
-- Logistic Regression: 78.4%
-- Decision Tree: 76.4%
-- Random Forest: 77.8%
