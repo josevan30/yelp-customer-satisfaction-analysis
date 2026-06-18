@@ -586,6 +586,11 @@ model_results <- data.frame(
   ), 3)
 )
 
+model_results <- model_results[
+  order(model_results$Hit_Rate_Percent, decreasing = TRUE),
+]
+
+model_results
 # ============================================================
 # PERFORMANCE OF MACHINE LEARNING ALGORITHMS
 # ============================================================
