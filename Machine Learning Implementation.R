@@ -394,6 +394,7 @@ svm_gini <- get_gini(test_actual, svm_prob)
 svm_tdl <- get_tdl(test_actual, svm_prob)
 
 
+
 # ============================================================
 # 22. MODEL 7: NEURAL NETWORK
 # ============================================================
@@ -404,19 +405,22 @@ time_nn <- system.time({
   
   model_nn <- nnet(
     x = train_scaled,
-    y = as.numeric(as.character(train_labels)),
-    size = 5,
-    maxit = 300,
+    y = class.ind(train_labels),
+    size = 8,
+    decay = 0.01,
+    maxit = 1000,
+    softmax = TRUE,
     trace = FALSE
   )
   
-  nn_prob <- as.vector(
-    predict(
-      model_nn,
-      newdata = test_scaled,
-      type = "raw"
-    )
+  nn_prob_raw <- predict(
+    model_nn,
+    newdata = test_scaled,
+    type = "raw"
   )
+  
+  # Probability of class 1 = satisfied
+  nn_prob <- nn_prob_raw[, "1"]
   
   nn_pred <- ifelse(nn_prob >= 0.5, 1, 0)
   
@@ -432,6 +436,13 @@ nn_confusion
 nn_accuracy <- get_accuracy(test_actual, nn_pred)
 nn_gini <- get_gini(test_actual, nn_prob)
 nn_tdl <- get_tdl(test_actual, nn_prob)
+
+nn_accuracy
+nn_gini
+nn_tdl
+
+summary(nn_prob)
+length(unique(round(nn_prob, 4)))
 
 
 # ============================================================
