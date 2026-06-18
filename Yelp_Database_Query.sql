@@ -21,7 +21,9 @@ SELECT
     b.state,
     b.latitude,
     b.longitude,
-    b.stars AS business_stars,
+
+    -- removed b.stars AS business_stars to avoid information leakage
+
     b.review_count AS business_review_count,
     b.is_open,
     b.categories,
@@ -80,5 +82,4 @@ JOIN public3.businesstable b
 LEFT JOIN public3.userstable u
     ON r.user_id = u.user_id
 
-WHERE b.categories ILIKE '%Restaurants%'
-;
+WHERE b.categories ILIKE '%Restaurants%';
