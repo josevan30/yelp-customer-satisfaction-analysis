@@ -282,6 +282,14 @@ varImpPlot(
 # ============================================================
 # 19. SCALE DATA FOR KNN, SVM, AND NEURAL NETWORK
 # ============================================================
+# Convert business_price from character to numeric
+# "NULL" will become NA
+train_data$business_price <- as.numeric(train_data$business_price)
+test_data$business_price  <- as.numeric(test_data$business_price)
+
+# Remove rows with NA after conversion
+train_data <- na.omit(train_data)
+test_data  <- na.omit(test_data)
 
 knn_train <- train_data[, predictor_vars]
 knn_test  <- test_data[, predictor_vars]
@@ -296,7 +304,7 @@ test_scaled <- scale(
 
 train_labels <- as.factor(train_data$satisfied)
 test_labels  <- as.factor(test_data$satisfied)
-
+str(knn_train)
 
 # ============================================================
 # 20. MODEL 5: KNN
@@ -330,6 +338,9 @@ knn_confusion <- table(
 knn_confusion
 
 knn_accuracy <- get_accuracy(test_labels, knn_pred)
+
+# Refresh actual values so length matches KNN probability output
+test_actual <- as.numeric(as.character(test_labels))
 knn_gini <- get_gini(test_actual, knn_prob)
 knn_tdl <- get_tdl(test_actual, knn_prob)
 
@@ -394,7 +405,6 @@ svm_gini <- get_gini(test_actual, svm_prob)
 svm_tdl <- get_tdl(test_actual, svm_prob)
 
 
-
 # ============================================================
 # 22. MODEL 7: NEURAL NETWORK
 # ============================================================
@@ -443,7 +453,6 @@ nn_tdl
 
 summary(nn_prob)
 length(unique(round(nn_prob, 4)))
-
 
 # ============================================================
 # 23. MODEL 8: GRADIENT BOOSTING
@@ -527,9 +536,11 @@ bag_confusion <- table(
 bag_confusion
 
 bag_accuracy <- get_accuracy(test_class$satisfied, bag_pred)
-bag_gini <- get_gini(test_actual, bag_prob)
-bag_tdl <- get_tdl(test_actual, bag_prob)
 
+bag_actual <- as.numeric(as.character(test_class$satisfied))
+
+bag_gini <- get_gini(bag_actual, bag_prob)
+bag_tdl <- get_tdl(bag_actual, bag_prob)
 
 # ============================================================
 # 25. FINAL MODEL COMPARISON TABLE
