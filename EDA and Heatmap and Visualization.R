@@ -31,11 +31,11 @@ summary(data)
 # ============================================================
 
 summary_table <- data.frame(
-  Variable = names(model_data),
-  Mean = sapply(model_data, mean),
-  SD = sapply(model_data, sd),
-  Min = sapply(model_data, min),
-  Max = sapply(model_data, max)
+  Variable = names(data),
+  Mean = sapply(data, mean),
+  SD = sapply(data, sd),
+  Min = sapply(data, min),
+  Max = sapply(data, max)
 )
 
 summary_table
