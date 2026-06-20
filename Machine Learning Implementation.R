@@ -47,11 +47,20 @@ predictor_vars <- c(
 )
 
 model_data <- data[, c("satisfied", predictor_vars)]
-model_data <- na.omit(model_data)
+
+# Convert text NULL values to real NA
+model_data[model_data == "NULL"] <- NA
+model_data[model_data == "None"] <- NA
+model_data[model_data == ""] <- NA
+
+# Convert selected variables to numeric
+model_data$business_price <- as.numeric(model_data$business_price)
 model_data$satisfied <- as.numeric(model_data$satisfied)
 
-nrow(model_data)
+# Remove rows with missing values
+model_data <- na.omit(model_data)
 
+nrow(model_data)
 # ============================================================
 # 13. TRAIN-TEST SPLIT
 # ============================================================
