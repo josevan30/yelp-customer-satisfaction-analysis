@@ -585,9 +585,44 @@ gbm_accuracy <- get_accuracy(test_actual, gbm_pred)
 gbm_gini <- get_gini(test_actual, gbm_prob)
 gbm_tdl <- get_tdl(test_actual, gbm_prob)
 
+# ------------------------------------------------------------
+# Gradient Boosting Variable Importance - Better Plot
+# ------------------------------------------------------------
 
+# Get GBM importance table without plotting
+gbm_importance <- summary(model_gbm, plotit = FALSE)
+
+# Sort by relative influence
+gbm_importance <- gbm_importance[order(gbm_importance$rel.inf, decreasing = TRUE), ]
+
+# Optional: show only top 10 variables
+gbm_importance_top <- head(gbm_importance, 10)
+
+# Increase left margin so variable names are not cut
+par(mar = c(5, 12, 4, 2))
+
+# Horizontal barplot
+bp <- barplot(
+  gbm_importance_top$rel.inf,
+  names.arg = gbm_importance_top$var,
+  horiz = TRUE,
+  las = 1,
+  xlab = "Relative Influence",
+  main = "Gradient Boosting Variable Importance",
+  xlim = c(0, max(gbm_importance_top$rel.inf) * 1.15),
+  cex.names = 0.8
+)
+
+# Add value labels
+text(
+  x = gbm_importance_top$rel.inf,
+  y = bp,
+  labels = round(gbm_importance_top$rel.inf, 2),
+  pos = 4,
+  cex = 0.8
+)
 # ============================================================
-# 24. MODEL 9: BAGGING
+# 14. MODEL 9: BAGGING
 # ============================================================
 
 set.seed(123)
@@ -631,7 +666,7 @@ bag_gini <- get_gini(bag_actual, bag_prob)
 bag_tdl <- get_tdl(bag_actual, bag_prob)
 
 # ============================================================
-# 25. FINAL MODEL COMPARISON TABLE
+# 15. FINAL MODEL COMPARISON TABLE
 # ============================================================
 
 model_results <- data.frame(
@@ -701,6 +736,32 @@ model_results <- model_results[
 ]
 
 model_results
+
+# ------------------------------------------------------------
+# Export Final Model Comparison Table to CSV and Excel
+# ------------------------------------------------------------
+
+# Reset row numbers after sorting
+rownames(model_results) <- NULL
+
+# Export to CSV
+write.csv(
+  model_results,
+  "final_model_comparison_table.csv",
+  row.names = FALSE
+)
+
+# Install only once if needed
+# install.packages("writexl")
+
+library(writexl)
+
+# Export to Excel
+write_xlsx(
+  model_results,
+  "final_model_comparison_table.xlsx"
+)
+
 # ============================================================
 # PERFORMANCE OF MACHINE LEARNING ALGORITHMS
 # ============================================================
@@ -739,7 +800,7 @@ text(
 par(mar = c(5, 4, 4, 2))
 
 # ============================================================
-# 26. MODEL ACCURACY COMPARISON PLOT
+# 16. MODEL ACCURACY COMPARISON PLOT
 # ============================================================
 
 bp <- barplot(
@@ -761,7 +822,7 @@ text(
 
 
 # ============================================================
-# 27. GINI COMPARISON PLOT
+# 17. GINI COMPARISON PLOT
 # ============================================================
 
 bp <- barplot(
@@ -783,7 +844,7 @@ text(
 
 
 # ============================================================
-# 28. TOP DECILE LIFT COMPARISON PLOT
+# 18. TOP DECILE LIFT COMPARISON PLOT
 # ============================================================
 
 bp <- barplot(
@@ -805,7 +866,7 @@ text(
 
 
 # ============================================================
-# 29. LIFT CURVE FOR BEST MODEL
+# 19. LIFT CURVE FOR BEST MODEL
 # ============================================================
 
 prob_list <- list(
@@ -846,3 +907,129 @@ abline(
   h = 1,
   lty = 2
 )
+
+# ============================================================
+# CUMULATIVE GAINS CURVE FOR BEST MODEL
+# ============================================================
+
+prob_list <- list(
+  "Logistic Regression" = logit_prob,
+  "Naive Bayes" = nb_prob,
+  "Decision Tree" = tree_prob,
+  "Random Forest" = rf_prob,
+  "KNN" = knn_prob,
+  "SVM" = svm_prob,
+  "Neural Network" = nn_prob,
+  "Gradient Boosting" = gbm_prob,
+  "Bagging" = bag_prob
+)
+
+best_model_name <- model_results$Model[1]
+best_prob <- prob_list[[best_model_name]]
+
+# Make sure actual values are numeric 0/1
+test_actual_num <- as.numeric(as.character(test_actual))
+
+# Rank observations from highest predicted satisfaction probability to lowest
+ordered_index <- order(best_prob, decreasing = TRUE)
+actual_ordered <- test_actual_num[ordered_index]
+
+# X-axis: share of test sample
+population_share <- seq_along(actual_ordered) / length(actual_ordered)
+
+# Y-axis: share of satisfied reviews captured
+cumulative_gain <- cumsum(actual_ordered) / sum(actual_ordered)
+
+# Plot cumulative gains curve
+plot(
+  population_share,
+  cumulative_gain,
+  type = "l",
+  lwd = 2,
+  xlab = "Share of Test Sample Ranked by Predicted Probability",
+  ylab = "Share of Satisfied Reviews Captured",
+  main = paste("Cumulative Gains Curve -", best_model_name),
+  xlim = c(0, 1),
+  ylim = c(0, 1),
+  las = 1
+)
+
+# Random model baseline
+abline(
+  a = 0,
+  b = 1,
+  lty = 2
+)
+
+# Optional: add top decile vertical line
+abline(
+  v = 0.1,
+  lty = 3
+)
+
+# ============================================================
+# CUMULATIVE GAINS CURVE FOR ALL MODELS
+# ============================================================
+
+library(dplyr)
+library(ggplot2)
+
+prob_list <- list(
+  "Random Forest" = rf_prob,
+  "SVM" = svm_prob,
+  "Neural Network" = nn_prob,
+  "Gradient Boosting" = gbm_prob,
+  "Logistic Regression" = logit_prob,
+  "Bagging" = bag_prob,
+  "Decision Tree" = tree_prob,
+  "KNN" = knn_prob,
+  "Naive Bayes" = nb_prob
+)
+
+# Make sure actual values are numeric 0/1
+test_actual_num <- as.numeric(as.character(test_actual))
+
+# Function to create cumulative gains data
+create_gain_curve <- function(prob, model_name) {
+  
+  ordered_index <- order(prob, decreasing = TRUE)
+  actual_ordered <- test_actual_num[ordered_index]
+  
+  data.frame(
+    Samples_Tested = seq_along(actual_ordered) / length(actual_ordered) * 100,
+    Samples_Found = cumsum(actual_ordered) / sum(actual_ordered) * 100,
+    Model = model_name
+  )
+}
+
+# Combine all models
+gain_data <- bind_rows(
+  lapply(names(prob_list), function(model_name) {
+    create_gain_curve(prob_list[[model_name]], model_name)
+  })
+)
+
+# Random baseline
+baseline_data <- data.frame(
+  Samples_Tested = c(0, 100),
+  Samples_Found = c(0, 100),
+  Model = "Random Selection"
+)
+
+# Plot cumulative gains curve
+ggplot(gain_data, aes(x = Samples_Tested, y = Samples_Found, color = Model)) +
+  geom_line(linewidth = 0.8) +
+  geom_line(
+    data = baseline_data,
+    aes(x = Samples_Tested, y = Samples_Found),
+    inherit.aes = FALSE,
+    linetype = "dashed",
+    color = "gray50"
+  ) +
+  labs(
+    title = "Cumulative Gains Curve",
+    x = "% Samples Tested",
+    y = "% Satisfied Reviews Found",
+    color = "Model"
+  ) +
+  theme_minimal()
