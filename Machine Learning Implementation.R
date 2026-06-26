@@ -13,7 +13,7 @@ data <- read.csv("yelp_v5_holiday_sentiment.csv")
 
 
 # ============================================================
-# 12. CREATE CLEAN MODELING DATASET
+# 2. CREATE CLEAN MODELING DATASET
 # ============================================================
 
 library(e1071)
@@ -62,7 +62,7 @@ model_data <- na.omit(model_data)
 
 nrow(model_data)
 # ============================================================
-# 13. TRAIN-TEST SPLIT
+# 3. TRAIN-TEST SPLIT
 # ============================================================
 
 set.seed(123)
@@ -88,7 +88,7 @@ model_formula <- as.formula(
 )
 
 # ============================================================
-# 14. HELPER FUNCTIONS
+# 4. HELPER FUNCTIONS
 # ============================================================
 
 get_accuracy <- function(actual, predicted) {
@@ -118,7 +118,7 @@ model_results <- data.frame()
 
 
 # ============================================================
-# 15. MODEL 1: LOGISTIC REGRESSION
+# 5. MODEL 1: LOGISTIC REGRESSION
 # ============================================================
 
 time_logit <- system.time({
@@ -152,9 +152,88 @@ logit_accuracy <- get_accuracy(test_actual, logit_pred)
 logit_gini <- get_gini(test_actual, logit_prob)
 logit_tdl <- get_tdl(test_actual, logit_prob)
 
+# ------------------------------------------------------------
+# Export Logistic Regression Results to Excel
+# ------------------------------------------------------------
+
+# Install only once if needed
+install.packages("broom")
+# install.packages("writexl")
+# install.packages("dplyr")
+
+library(broom)
+library(writexl)
+library(dplyr)
+
+# ------------------------------------------------------------
+# Coefficient table
+# ------------------------------------------------------------
+
+logit_coefficients <- tidy(model_logit) %>%
+  mutate(
+    odds_ratio = exp(estimate),
+    significance = case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01  ~ "**",
+      p.value < 0.05  ~ "*",
+      p.value < 0.1   ~ ".",
+      TRUE ~ ""
+    )
+  ) %>%
+  rename(
+    Variable = term,
+    Estimate = estimate,
+    Std_Error = std.error,
+    Z_Value = statistic,
+    P_Value = p.value,
+    Odds_Ratio = odds_ratio,
+    Significance = significance
+  ) %>%
+  mutate(
+    Estimate = round(Estimate, 4),
+    Std_Error = round(Std_Error, 4),
+    Z_Value = round(Z_Value, 4),
+    P_Value = round(P_Value, 5),
+    Odds_Ratio = round(Odds_Ratio, 4)
+  )
+
+# ------------------------------------------------------------
+# Model fit statistics
+# ------------------------------------------------------------
+
+logit_model_fit <- glance(model_logit) %>%
+  select(
+    null.deviance,
+    df.null,
+    deviance,
+    df.residual,
+    AIC,
+    BIC
+  ) %>%
+  rename(
+    Null_Deviance = null.deviance,
+    Null_DF = df.null,
+    Residual_Deviance = deviance,
+    Residual_DF = df.residual,
+    AIC = AIC,
+    BIC = BIC
+  ) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+# ------------------------------------------------------------
+# Export to Excel
+# ------------------------------------------------------------
+
+write_xlsx(
+  list(
+    "Logistic Coefficients" = logit_coefficients,
+    "Model Fit" = logit_model_fit
+  ),
+  "logistic_regression_results.xlsx"
+)
 
 # ============================================================
-# 16. MODEL 2: NAIVE BAYES
+# 6. MODEL 2: NAIVE BAYES
 # ============================================================
 
 time_nb <- system.time({
@@ -192,7 +271,7 @@ nb_tdl <- get_tdl(test_actual, nb_prob)
 
 
 # ============================================================
-# 17. MODEL 3: DECISION TREE
+# 7. MODEL 3: DECISION TREE
 # ============================================================
 
 time_tree <- system.time({
@@ -242,7 +321,7 @@ tree_tdl <- get_tdl(test_actual, tree_prob)
 
 
 # ============================================================
-# 18. MODEL 4: RANDOM FOREST
+# 8. MODEL 4: RANDOM FOREST
 # ============================================================
 
 set.seed(123)
@@ -289,7 +368,7 @@ varImpPlot(
 
 
 # ============================================================
-# 19. SCALE DATA FOR KNN, SVM, AND NEURAL NETWORK
+# 9. SCALE DATA FOR KNN, SVM, AND NEURAL NETWORK
 # ============================================================
 # Convert business_price from character to numeric
 # "NULL" will become NA
@@ -316,7 +395,7 @@ test_labels  <- as.factor(test_data$satisfied)
 str(knn_train)
 
 # ============================================================
-# 20. MODEL 5: KNN
+# 10. MODEL 5: KNN
 # ============================================================
 
 time_knn <- system.time({
@@ -379,7 +458,7 @@ plot(
 
 
 # ============================================================
-# 21. MODEL 6: SUPPORT VECTOR MACHINE
+# 11. MODEL 6: SUPPORT VECTOR MACHINE
 # ============================================================
 
 time_svm <- system.time({
@@ -415,7 +494,7 @@ svm_tdl <- get_tdl(test_actual, svm_prob)
 
 
 # ============================================================
-# 22. MODEL 7: NEURAL NETWORK
+# 12. MODEL 7: NEURAL NETWORK
 # ============================================================
 
 set.seed(123)
@@ -464,7 +543,7 @@ summary(nn_prob)
 length(unique(round(nn_prob, 4)))
 
 # ============================================================
-# 23. MODEL 8: GRADIENT BOOSTING
+# 13. MODEL 8: GRADIENT BOOSTING
 # ============================================================
 
 set.seed(123)
